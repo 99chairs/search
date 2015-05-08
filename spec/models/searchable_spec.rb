@@ -93,6 +93,12 @@ describe 'Searchability' do
       }.by(0)
     end
 
+    it 'provides a handler to retrieve managed indices' do
+        Dummy.searchable { }
+        idx_sym = Searchengine::Indices.all.first
+        expect(Searchengine::Indices.get(idx_sym)).to eq(Searchengine::Indices::DummyIndex)
+    end
+
     context "sets the searchindex name" do
       it 'to the default name on #searchable' do
         expect{ 
