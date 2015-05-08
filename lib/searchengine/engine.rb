@@ -1,10 +1,15 @@
+require 'concerns/models/searchable'
+require 'chewy'
+
 module Searchengine
   class Engine < ::Rails::Engine
 
     isolate_namespace Searchengine
+  end
 
-    config.generators do |g|
-      g.test_framework :rspec
+  module Indices
+    def self.all
+      constants
     end
   end
 end

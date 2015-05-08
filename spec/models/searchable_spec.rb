@@ -77,10 +77,26 @@ describe 'Searchability' do
       expect(Dummy).to respond_to(:searchable_as)
     end
 
+    it 'provides a handler to expose managed indices' do
+      expect{
+        Dummy.searchable { }
+      }.to change{
+        Searchengine::Indices.all.count
+      }.by(1)
+    end
+
+    it 'provides a handler to expose managed indices' do
+      expect{
+        stub_const 'Bubblegum', Class.new(Chewy::Index)
+      }.to change{
+        Searchengine::Indices.all.count
+      }.by(0)
+    end
+
     context "sets the searchindex name" do
       it 'to the default name on #searchable' do
         expect{ 
-          Dummy.searchable { p 'hi'} 
+          Dummy.searchable { } 
         }.to change{
           Dummy.search_index_name
         }.from(nil).to include("#{Dummy.name}Index")
@@ -88,7 +104,7 @@ describe 'Searchability' do
   
       it 'to the specified name' do
         expect{ 
-          Dummy.searchable_as('Attrappe') { p 'ho' } 
+          Dummy.searchable_as('Attrappe') { } 
         }.to change{
           Dummy.search_index_name
         }.from(nil).to include('AttrappeIndex')
@@ -98,7 +114,6 @@ describe 'Searchability' do
     context 'with an index' do
       it 'ensures the index is known to Chewy' do
         Dummy.searchable { }
-        p Chewy::Index.descendants.map { |d| d.name }
         expect(Chewy::Index.descendants).to include(Dummy.search_index)
       end
     end
