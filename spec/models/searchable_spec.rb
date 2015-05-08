@@ -1,16 +1,27 @@
-class SearchableDummyModel < ActiveRecord::Base
-  def self.columns() @columns ||= []; end
-
-  def self.column(name, sql_type=nil, default=nil, null=true)
-    columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
-  end
-
-  column :email, :string
-  column :name, :string
-end
+#class SearchableDummyModel < ActiveRecord::Base
+#  def self.columns() @columns ||= []; end
+#
+#  def self.column(name, sql_type=nil, default=nil, null=true)
+#    columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
+#  end
+#
+#  column :email, :string
+#  column :name, :string
+#end
 
 module SearchableTestModels
   module Nothing
+  end
+end
+
+module Walkable
+  extend ActiveSupport::Concern
+  def self.included(base)
+    def has_pavement?; 'paved' end
+  end
+
+  module ClassMethods
+    def has_sidewalk?;  'luke sidewalker' end
   end
 end
 
@@ -21,6 +32,7 @@ class Strasse
   def name; @name end
   def self.type; 'street' end
 end
+
 class Address < Strasse
   def initialize(a,b)
     @name=a
@@ -32,20 +44,68 @@ class Address < Strasse
 end
 
 describe 'Searchability' do
+  before(:each) do
+    stub_const 'Dummy', Class.new(ActiveRecord::Base)
+    Dummy.class_eval do
+      def self.columns() @columns ||= []; end
+    
+      def self.column(name, sql_type=nil, default=nil, null=true)
+        columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
+      end
+    
+      column :email, :string
+      column :name, :string
+    end
+  end
+
   context 'on a dummy model' do
-    before do
-      #stub_const 'Dummy', ActiveRecord::Base
-      #Dummy.class_eval do 
-      #  searchable as: 'Dumdum' do |dum| # `as: 'Dumdum'` part is optional
-      #    def greet; 'hi' 
-      #    field: :email, type: 'email'
-      #    field: :name # defaults to string
-      #  end
-      #end
+    before(:each) do
+      Dummy.class_eval do
+        include Searchengine::Concerns::Models::Searchable
+      end
+#      SearchableDummyModel.class_eval do 
+#      #  searchable as: 'Dumdum' do |dum| # `as: 'Dumdum'` part is optional
+#      #    def greet; 'hi' 
+#      #    field: :email, type: 'email'
+#      #    field: :name # defaults to string
+#      #  end
+#      end
+#      stub_const 'Dummy', SearchableDummyModel
+    end
+
+    it 'exposes the searchability descriptor' do
+      expect(Dummy).to respond_to(:searchable_as)
+    end
+
+    context "sets the searchindex name" do
+      it 'to the default name on #searchable' do
+        expect{ 
+          Dummy.searchable { p 'hi'} 
+        }.to change{
+          Dummy.search_index_name
+        }.from(nil).to include("#{Dummy.name}Index")
+      end
+  
+      it 'to the specified name' do
+        expect{ 
+          Dummy.searchable_as('Attrappe') { p 'ho' } 
+        }.to change{
+          Dummy.search_index_name
+        }.from(nil).to include('AttrappeIndex')
+      end
     end
 
     it 'responds to #email' do
-      expect(SearchableDummyModel.new).to respond_to(:email)
+      expect(Dummy.new).to respond_to(:email)
+    end
+
+    it 'has a model that respects the concerns' do
+      Strasse.class_eval do
+        include Walkable
+      end
+      expect(Strasse).to respond_to :has_sidewalk?
+      expect(Strasse).not_to respond_to :has_pavement?
+      expect(Strasse.new).to respond_to :has_pavement?
     end
 
     it 'interrogates objects' do
