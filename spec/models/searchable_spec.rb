@@ -73,13 +73,22 @@ describe 'Searchability' do
 #      stub_const 'Dummy', SearchableDummyModel
     end
 
-    it 'exposes the searchability descriptor' do
+    it 'exposes the searchability descriptors' do
       expect(Dummy).to respond_to(:searchable_as)
+      expect(Dummy).to respond_to(:searchable)
     end
 
     it 'provides a handler to expose managed indices' do
       expect{
         Dummy.searchable { }
+      }.to change{
+        Searchengine::Indices.all.count
+      }.by(1)
+    end
+
+    it 'provides a handler to expose managed named indices' do
+      expect {
+        Dummy.searchable_as('Unoccupied') { |i| p "incoming #{i}" }
       }.to change{
         Searchengine::Indices.all.count
       }.by(1)

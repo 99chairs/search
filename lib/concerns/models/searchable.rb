@@ -12,8 +12,8 @@ module Searchengine
 
         module ClassMethods
           def searchable
-            searchable_as(name) do
-              yield
+            searchable_as(name) do |index|
+              yield index
             end
           end
 
@@ -24,7 +24,7 @@ module Searchengine
             @index_name = "#{name}Index"
             @index = Searchengine::Indices.const_set(@index_name, Class.new(Chewy::Index))
             @index.class_eval do
-              yield
+              yield self 
             end
             @index
           end
