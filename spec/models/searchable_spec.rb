@@ -95,6 +95,14 @@ describe 'Searchability' do
       end
     end
 
+    context 'with an index' do
+      it 'ensures the index is known to Chewy' do
+        Dummy.searchable { }
+        p Chewy::Index.descendants.map { |d| d.name }
+        expect(Chewy::Index.descendants).to include(Dummy.search_index)
+      end
+    end
+
     it 'responds to #email' do
       expect(Dummy.new).to respond_to(:email)
     end
@@ -131,11 +139,6 @@ describe 'Searchability' do
       expect(second.class.superclass).to equal(Strasse)
       expect(second.name).to eq(new_address.split.first)
       expect(second.class.type).to eq(Strasse.type)
-    end
-
-    it 'is named' do
-      SearchableTestModels.const_set("Dummy", Class.new(Strasse))
-      #p SearchableTestModels::Dummy
     end
   end
 end
