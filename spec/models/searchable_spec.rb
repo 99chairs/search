@@ -94,7 +94,7 @@ describe 'Searchability' do
       }.by(1)
     end
 
-    it 'provides a handler to expose managed indices' do
+    it 'is oblivious to non searchengine indices' do
       expect{
         stub_const 'Bubblegum', Class.new(Chewy::Index)
       }.to change{
