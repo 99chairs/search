@@ -73,8 +73,9 @@ describe 'Searchability' do
 #      stub_const 'Dummy', SearchableDummyModel
     end
 
-    it 'exposes the searchability descriptor' do
+    it 'exposes the searchability descriptors' do
       expect(Dummy).to respond_to(:searchable_as)
+      expect(Dummy).to respond_to(:searchable)
     end
 
     it 'provides a handler to expose managed indices' do
@@ -85,12 +86,26 @@ describe 'Searchability' do
       }.by(1)
     end
 
-    it 'provides a handler to expose managed indices' do
+    it 'provides a handler to expose managed named indices' do
+      expect {
+        Dummy.searchable_as('Unoccupied') { |i| p "incoming #{i}" }
+      }.to change{
+        Searchengine::Indices.all.count
+      }.by(1)
+    end
+
+    it 'is oblivious to non searchengine indices' do
       expect{
         stub_const 'Bubblegum', Class.new(Chewy::Index)
       }.to change{
         Searchengine::Indices.all.count
       }.by(0)
+    end
+
+    it 'provides a handler to retrieve managed indices' do
+        Dummy.searchable { }
+        idx_sym = Searchengine::Indices.all.first
+        expect(Searchengine::Indices.get(idx_sym)).to eq(Searchengine::Indices::DummyIndex)
     end
 
     context "sets the searchindex name" do

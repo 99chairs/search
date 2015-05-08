@@ -11,5 +11,9 @@ module Searchengine
     def self.all
       constants
     end
+
+    def self.get(index_reference)
+      const_get(index_reference)
+    end
   end
 end
