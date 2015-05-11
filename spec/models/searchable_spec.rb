@@ -25,7 +25,7 @@ describe 'Searchability' do
       expect(Dummy).to respond_to(:searchable)
     end
 
-    it 'provides a handler to expose managed indices' do
+    it 'creates a search index for searchable models' do
       expect{
         Dummy.searchable { }
       }.to change{
@@ -33,7 +33,7 @@ describe 'Searchability' do
       }.by(1)
     end
 
-    it 'provides a handler to expose managed named indices' do
+    it 'creates a search index for named searchable models' do
       expect {
         Dummy.searchable_as('Unoccupied') { |i| p "incoming #{i}" }
       }.to change{
@@ -55,8 +55,8 @@ describe 'Searchability' do
       expect(Searchengine::Indices.get(idx_sym)).to eq(Searchengine::Indices::DummyIndex)
     end
 
-    context "sets the searchindex name" do
-      it 'to the default name on #searchable' do
+    context "names the index" do
+      it 'after the model by default' do
         expect{ 
           Dummy.searchable { } 
         }.to change{
@@ -64,7 +64,7 @@ describe 'Searchability' do
         }.from(nil).to include("#{Dummy.name}Index")
       end
   
-      it 'to the specified name' do
+      it 'after the specified input' do
         expect{ 
           Dummy.searchable_as('Attrappe') { } 
         }.to change{
