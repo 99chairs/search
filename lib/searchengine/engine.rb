@@ -1,4 +1,5 @@
 require 'concerns/models/searchable'
+require 'concerns/controllers/searchable'
 require 'chewy'
 
 module Searchengine
