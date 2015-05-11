@@ -1,7 +1,5 @@
 module Searchengine
   class DummiesController < ActionController::Base
-    #include Searchengine::Concerns::Models::Searchable
-    include Searchengine::Concerns::Controllers::Searchable
   end
 
   Engine.routes.draw do
@@ -10,13 +8,16 @@ module Searchengine
 end
 
 describe Searchengine::DummiesController, type: :controller do
+  before(:each) do
+    Searchengine::DummiesController.class_eval do
+      include Searchengine::Concerns::Controllers::Searchable
+    end
+  end
+
   routes { Searchengine::Engine.routes }
 
   describe 'supporting search' do
     it 'responds to the #search action' do
-      #Searchengine::Engine.routes.named_routes.each { |r, s|  
-      #  p s # "r=#{r} s=#{s}" 
-      #}
       get :search
       expect(response.status).to eq(200)
     end
