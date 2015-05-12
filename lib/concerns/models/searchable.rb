@@ -7,7 +7,6 @@ module Searchengine
         extend ActiveSupport::Concern
   
         included do
-          #after_save :update_search_index
         end
 
         module ClassMethods
@@ -21,12 +20,16 @@ module Searchengine
           # Creates a search index for the specified model given +name+ and 
           # optional (it's in the name) +options+
           def searchable_as(name, options={})
-            @index_name = "#{name}Index"
+            @index_name = "#{name.to_s.camelize}Index"
             @index = Searchengine::Indices.const_set(@index_name, Class.new(Chewy::Index))
             @index.class_eval do
               yield self 
             end
             @index
+          end
+
+          def updatable_as(index, type)
+            update_index("/searchengine/indices/#{index}##{type}") { self }
           end
 
           def search_index
@@ -35,10 +38,6 @@ module Searchengine
 
           def search_index_name
             @index_name
-          end
-
-          def build_search_index
-            #yield
           end
         end
       end

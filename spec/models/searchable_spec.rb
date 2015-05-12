@@ -71,6 +71,19 @@ describe 'Searchability' do
           Dummy.search_index_name
         }.from(nil).to include('AttrappeIndex')
       end
+
+      it 'after the camelized variant of the specified input' do
+        expect{ 
+          Dummy.searchable_as('great_knowledge') { } 
+        }.to change{
+          Dummy.search_index_name
+        }.from(nil).to include('GreatKnowledge')
+      end
+
+      it 'sets up the #update_index proc' do
+        expect(Dummy).to receive(:update_index).with('/searchengine/indices/index#type')
+        Dummy.updatable_as('index', 'type')
+      end
     end
 
     context 'with an index' do
