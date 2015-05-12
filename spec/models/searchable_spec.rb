@@ -1,7 +1,12 @@
+
 describe 'Searchability' do
   before(:each) do
     stub_const 'Dummy', Class.new(ActiveRecord::Base)
+    Chewy.root_strategy = :urgent
     Dummy.class_eval do # set up a tableless model
+      require 'activerecord-tableless'
+
+      has_no_table database: :pretend_success
       def self.columns() @columns ||= []; end
     
       def self.column(name, sql_type=nil, default=nil, null=true)
@@ -87,9 +92,32 @@ describe 'Searchability' do
     end
 
     context 'with an index' do
+      before(:each) do
+        Dummy.class_eval do
+          searchable_as :sandbox do |index|
+            index.define_type Dummy do |type|
+              type.field :email, :string
+              type.field :name, :string
+            end
+          end
+          updatable_as :sandbox, :dummy
+        end
+        Dummy.search_index.purge!
+      end
+
       it 'ensures the index is known to Chewy' do
         Dummy.searchable { }
         expect(Chewy::Index.descendants).to include(Dummy.search_index)
+      end
+
+      it 'adds items to the index' do
+        filter = Dummy.search_index.filter do
+          q(query_string: { query: '*stew*' } ) 
+        end
+        expect {
+          Dummy.create(email: 'stewie@griffin.qh', name: 'Steward')
+          Dummy.create(email: 'cook@delistews.kitchen', name: 'Delish Stews')
+        }.to change{ filter.total_count }.by(2)
       end
     end
   end

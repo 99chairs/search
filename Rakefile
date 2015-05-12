@@ -3,6 +3,7 @@ begin
 rescue LoadError
   puts 'You must `gem install bundler` and `bundle install` to run rake tasks'
 end
+require 'elasticsearch/extensions/test/cluster/tasks'
 
 require 'rdoc/task'
 
