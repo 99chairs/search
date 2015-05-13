@@ -41,7 +41,12 @@ module Searchengine
             else
               args = ["/searchengine/indices/#{index}##{type}"]
             end
-            update_index(*args) { self }
+            puts "args are #{args}"
+            update_index(*args) do
+              p "begin update_index"
+              yield
+              p "end update_index"
+            end
           end
 
           def search_index

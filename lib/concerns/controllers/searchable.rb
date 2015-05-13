@@ -22,10 +22,14 @@ module Searchengine
             # Inspiration was the Google search API. They basically accept a
             # q param which contains the search term. In the spirit of K.I.S.S
             # this same design will be implemented here.
-            res[:result] = @search_type.filter do
-              q(query_string: { query: params[:q] }) 
-            end
+            res[:result] = find(params[:q])
             res
+          end
+
+          def find(phrase, options={})
+            @search_type.filter do
+              q(query_string: { query: phrase }) 
+            end
           end
 
           def searches(searchable, options={})

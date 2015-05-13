@@ -47,6 +47,10 @@ RSpec.configure do |config|
     mocks.verify_partial_doubles = true
   end
 
+  #config.before(:suite) do
+  #  Chewy.strategy(:mock)
+  #end
+
 # The settings below are suggested to provide a good initial experience
 # with RSpec, but feel free to customize to your heart's content.
 =begin

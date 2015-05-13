@@ -6,6 +6,6 @@ class Show < ActiveRecord::Base
       type.field :producer, type: 'string'
     end
   end
-  #updatable_as('fehrsehen', 'show')
-  update_index 'fehrsehen#show', :self
+  updatable_as('fehrsehen', 'show')
+  #update_index 'fehrsehen#show', :self
 end
