@@ -7,14 +7,17 @@ module Searchengine
         included do
           def query
             warn "@search_index not available" unless @search_index
-            render :json => process_query(params[:q])
+            render :json => self.class.process_query(params)
           end
 
           private
-          # A query may come in in the style `q=peter+guy`
+        end
+
+        module ClassMethods
           def process_query(params)
+            warn "index or type are nil" if @search_index.nil? || @search_type.nil?
             res = {}
-            res[:errors] = ['empty query'] if params.nil? || params[:q].empty?
+            res[:errors] = ['empty query'] if params.nil? || params[:q].nil? || params[:q].empty?
             # TODO: expand this logic into a query adaptor of some sorts
             # Inspiration was the Google search API. They basically accept a
             # q param which contains the search term. In the spirit of K.I.S.S
@@ -24,17 +27,15 @@ module Searchengine
             end
             res
           end
-        end
 
-        module ClassMethods
-          def searches(index, options={})
-            if index.kind_of? Class
-              klass = index
+          def searches(searchable, options={})
+            if searchable.kind_of? Class
+              klass = searchable
             else
-              klass = index.to_s.singularize.camelize.safe_constantize
+              klass = searchable.to_s.singularize.camelize.safe_constantize
             end
             @search_index = klass.search_index
-            @search_type = "#{@search_index}#{klass}".safe_constantize
+            @search_type = klass.search_type
           end
         end
       end

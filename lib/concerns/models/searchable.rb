@@ -22,20 +22,21 @@ module Searchengine
           def searchable_as(name, options={})
             @search_index_name = "#{name.to_s.camelize}Index"
             @search_index = Searchengine::Indices.const_set(@search_index_name, Class.new(Chewy::Index))
+
             @search_index.class_eval do
               yield self 
             end
-            @search_type = "#{@search_index}::#{self}".safe_constantize
-            puts "search_type for #{@search_index}::#{self} is #{@search_type}"
+
+            if @search_index.types.length == 1
+              @search_type = @search_index.types.first
+            else
+              @search_type = nil
+            end
             @search_index
           end
 
           def updatable_as(index, type)
             update_index(@search_type) { self }
-            #puts "\n\r\n\r\n\rHI: #{search_type}"
-            #puts "/searchengine/indices/#{index}_index##{type}"
-            #puts "/searchengine/indices/#{index}_index##{type}".safe_constantize
-            #update_index("/searchengine/indices/#{index}##{type}") { self }
           end
 
           def search_index
