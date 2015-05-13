@@ -1,4 +1,3 @@
-
 describe 'Searchability' do
   before(:each) do
     stub_const 'Dummy', Class.new(ActiveRecord::Base)
