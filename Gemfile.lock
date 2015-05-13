@@ -3,7 +3,7 @@ PATH
   specs:
     searchengine (0.0.1)
       chewy
-      rails (~> 4.0.2)
+      rails (>= 4.0.2)
 
 GEM
   remote: https://rubygems.org/
