@@ -35,8 +35,13 @@ module Searchengine
             @search_index
           end
 
-          def updatable_as(index, type)
-            update_index(@search_type) { self }
+          def updatable_as(index, type=nil)
+            if index.is_a? Chewy::Type
+              args = [@search_type]
+            else
+              args = ["/searchengine/indices/#{index}##{type}"]
+            end
+            update_index(*args) { self }
           end
 
           def search_index

@@ -40,7 +40,11 @@ describe 'Searchability' do
 
     it 'creates a search index for named searchable models' do
       expect {
-        Dummy.searchable_as('Unoccupied') { |i| p "incoming #{i}" }
+        Dummy.searchable_as('Unoccupied') do |index| 
+          index.define_type 'Something' do |type|
+            type.field :name, :string
+          end
+        end
       }.to change{
         Searchengine::Indices.all.count
       }.by(1)
