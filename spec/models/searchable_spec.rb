@@ -1,37 +1,36 @@
+require 'spec_helper'
+
 describe 'Searchability' do
   before(:each) do
-    stub_const 'Dummy', Class.new(ActiveRecord::Base)
+    stub_class 'City', ActiveRecord::Base
     Chewy.root_strategy = :urgent
-    Dummy.class_eval do # set up a tableless model
-      require 'activerecord-tableless'
-
-      has_no_table database: :pretend_success
-      def self.columns() @columns ||= []; end
-    
-      def self.column(name, sql_type=nil, default=nil, null=true)
-        columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
-      end
-    
-      column :email, :string
-      column :name, :string
-    end
+    class_double(City).as_stubbed_const
   end
 
   context 'on a dummy model' do
     before(:each) do
-      Dummy.class_eval do
+      City.class_eval do
+        # TODO: make this obsolete by extending ActiveRecord in an ActiveSupport#on_load block
         include Searchengine::Concerns::Models::Searchable
+        extend Chewy::Type::Observe::ActiveRecordMethods
       end
+      allow(City).to receive(:set) { |name, val|
+        stub_const "Searchengine::Indices::#{name}", val
+      }
     end
 
     it 'exposes the searchability descriptors' do
-      expect(Dummy).to respond_to(:searchable_as)
-      expect(Dummy).to respond_to(:searchable)
+      expect(City).to respond_to(:searchable_as)
+      expect(City).to respond_to(:searchable)
+    end
+
+    it 'exposes the Chewy indexing handler' do
+      expect(City).to respond_to(:update_index)
     end
 
     it 'creates a search index for searchable models' do
       expect{
-        Dummy.searchable { }
+        City.searchable { }
       }.to change{
         Searchengine::Indices.all.count
       }.by(1)
@@ -39,7 +38,7 @@ describe 'Searchability' do
 
     it 'creates a search index for named searchable models' do
       expect {
-        Dummy.searchable_as('Unoccupied') do |index| 
+        City.searchable_as('Unoccupied') do |index| 
           index.define_type 'Something' do |type|
             type.field :name, :string
           end
@@ -58,69 +57,71 @@ describe 'Searchability' do
     end
 
     it 'provides a handler to retrieve managed indices' do
-      Dummy.searchable { }
+      City.searchable { }
       idx_sym = Searchengine::Indices.all.first
-      expect(Searchengine::Indices.get(idx_sym)).to eq(Searchengine::Indices::DummyIndex)
+      expect(Searchengine::Indices.get(idx_sym)).to eq(Searchengine::Indices::CityIndex)
     end
 
     context "names the index" do
+      before(:each) do
+        #allow(City).to receive(:update_index)
+      end
+
       it 'after the model by default' do
         expect{ 
-          Dummy.searchable { } 
+          City.searchable { } 
         }.to change{
-          Dummy.search_index_name
-        }.from(nil).to include("#{Dummy.name}Index")
+          City.search_index_name
+        }.from(nil).to include("#{City.name}Index")
       end
   
       it 'after the specified input' do
         expect{ 
-          Dummy.searchable_as('Attrappe') { } 
+          City.searchable_as('Attrappe') { } 
         }.to change{
-          Dummy.search_index_name
+          City.search_index_name
         }.from(nil).to include('AttrappeIndex')
       end
 
       it 'after the camelized variant of the specified input' do
         expect{ 
-          Dummy.searchable_as('great_knowledge') { } 
+          City.searchable_as('great_knowledge') { } 
         }.to change{
-          Dummy.search_index_name
+          City.search_index_name
         }.from(nil).to include('GreatKnowledge')
       end
 
-      it 'sets up the #update_index proc' do
-        expect(Dummy).to receive(:update_index).with('/searchengine/indices/index#type')
-        Dummy.updatable_as('index', 'type')
-      end
+      it 'sets up the #update_index proc'
     end
 
     context 'with an index' do
       before(:each) do
-        Dummy.class_eval do
+        Chewy.use_after_commit_callbacks = false
+        allow(City).to receive(:create)
+        allow(City).to receive(:after_save)
+        allow(City).to receive(:after_destroy)
+        City.class_eval do
           searchable_as :sandbox do |index|
-            index.define_type Dummy do |type|
+            index.define_type 'City' do |type|
               type.field :email, :string
               type.field :name, :string
             end
           end
-          updatable_as :sandbox, :dummy
+          updatable_as :sandbox, :city
         end
-        Dummy.search_index.purge!
+        City.search_index.purge!
       end
 
       it 'ensures the index is known to Chewy' do
-        Dummy.searchable { }
-        expect(Chewy::Index.descendants).to include(Dummy.search_index)
+        City.searchable { }
+        expect(Chewy::Index.descendants).to include(City.search_index)
       end
 
-      it 'adds items to the index' do
-        filter = Dummy.search_index.filter do
-          q(query_string: { query: '*stew*' } ) 
-        end
-        expect {
-          Dummy.create(email: 'stewie@griffin.qh', name: 'Steward')
-          Dummy.create(email: 'cook@delistews.kitchen', name: 'Delish Stews')
-        }.to change{ filter.total_count }.by(2)
+      it 'triggers the after_save callback upon save' do
+        skip
+        expect(City).to receive(:update_proc).twice
+        City.create(name: 'Berlin', country_id: 'de', rating: 10)
+        City.create(name: 'Rotterdam', country_id: 'nl', rating: 10)
       end
     end
   end

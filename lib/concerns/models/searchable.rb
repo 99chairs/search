@@ -21,7 +21,7 @@ module Searchengine
           # optional (it's in the name) +options+
           def searchable_as(name, options={})
             @search_index_name = "#{name.to_s.camelize}Index"
-            @search_index = Searchengine::Indices.const_set(@search_index_name, Class.new(Chewy::Index))
+            @search_index = set @search_index_name, Class.new(Chewy::Index)
 
             @search_index.class_eval do
               yield self 
@@ -37,16 +37,12 @@ module Searchengine
 
           def updatable_as(index, type=nil)
             if index.is_a? Chewy::Type
-              args = [@search_type]
+              args = [@search_type, urgen: true]
             else
-              args = ["/searchengine/indices/#{index}##{type}"]
+              args = ["/searchengine/indices/#{index}##{type}", urgent: true]
             end
-            puts "args are #{args}"
-            update_index(*args) do
-              p "begin update_index"
-              yield
-              p "end update_index"
-            end
+
+            update_index(*args) { self } # may raise hell
           end
 
           def search_index
@@ -59,6 +55,11 @@ module Searchengine
 
           def search_index_name
             @search_index_name
+          end
+
+          private
+          def set(name, value)
+            Searchengine::Indices.const_set(name, value)
           end
         end
       end
