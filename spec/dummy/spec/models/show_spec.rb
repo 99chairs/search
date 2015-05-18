@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe Show, type: :model do
   before(:all) do
     Chewy.massacre
+    Chewy.root_strategy = :urgent
 
     Show.search_index.create!
     Show.create name: 'Family Guy', producer: 'Seth MacFarlane', piloted_at: DateTime.now
@@ -17,87 +18,68 @@ RSpec.describe Show, type: :model do
   end
 
   it 'has an index' do
-    expect(Show.search_index).to be(Searchengine::Indices::FehrsehenIndex)
+    expect(Show.search_index).to be(Searchengine::Indices::TestIndex)
   end
 
   it 'has a type' do
-    expect(Show.search_type).to be(Searchengine::Indices::FehrsehenIndex::Show)
-  end
-
-  it 'has a chewy setup' do
-    puts "Chewy config is #{Chewy.config.configuration}"
-  end
-
-  it 'creates a item' do
-    puts Chewy.root_strategy
-    puts Show.all.count
-    show = Show.create name: 'Family Guy', producer: 'Seth MacFarlane', piloted_at: DateTime.now
-    show.piloted_at = DateTime.new(1999, 1, 31, 18, 32)
-    show.save
-    puts Show.all.count
+    expect(Show.search_type).to be(Searchengine::Indices::TestIndex::Show)
   end
 
   context 'imports' do
-    let(:q) { { query_string: { query: 'seth*' } } }
+    let(:q) { { query_string: { query: '*unit*' } } }
+
     it 'existing resources into search index' do
       expect{ 
+        Show.create(name: 'The Unit', producer: 'David Mamet', piloted_at: DateTime.now)
         Show.search_type.import! refresh: true
-        10.times.each { Show.search_type.query(q).total_count }
+        # TODO: figure out a nicer way to test this, perhap mock ES altogether
+        10.times.each { puts Show.search_type.query(q).total_count }
       }.to change{
-        Show.search_type.query(query_string: { query: 'seth*' }).total_count
-      }.by(3)
-    end
-
-    it 'creates a new show' do
-      p "B #{Show.search_type.query(query_string: { query: 'seth*' }).total_count}"
-      begin
-        Show.create(name: "Fringe")
-      rescue => e
-        puts "broke on #{e}"
-      end
+        Show.search_type.query(q).total_count
+      }.by(1)
     end
   end
 
   context 'strategy #update' do
-    before { stub_const('Movie', Class.new(ActiveRecord::Base) {
-      update_index('cities#city', :self)
-    }) }
-    before { stub_const('MoviesIndex', Class.new(Chewy::Index) {
-      define_type Movie
-    }) }
-
-    before { stub_const('Chewy::Strategy::Mock', Class.new(Chewy::Strategy::Base) {
-      def update type, objects, options={}
-        puts "selfie #{self.class} HERE"
-        #super type, objects, options
-      end
-    }) }
-
-    it 'calls update on the strategy upon safe' do
-      p "C #{Show.search_type.query(query_string: { query: 'seth*' }).total_count}"
-      skip
-      expect_any_instance_of(@item).to receive(:update)
-      Movie.create!
+    before do
+      stub_const('Chewy::Strategy::Mock', Class.new(Chewy::Strategy::Base) {
+        puts "stubbing #update on #{self}"
+        def update type, objects, options={}
+          puts "selfie #{self.class} HERE"
+          #super type, objects, options
+        end
+      })
+      Chewy.root_strategy = :mock
     end
 
     it 'is triggered upon save' do
+      puts "thread is #{Thread.current[:chewy_strategy]}"
       skip
       expect_any_instance_of(Chewy::Strategy::Mock).to receive(:update)
-      Chewy.strategy(:mock) do
-        Show.create! name: 'The Simpsons', producer: 'Matt Groening', piloted_at: DateTime.now
-      end
-      puts "root=#{Chewy.root_strategy} strat=#{Chewy.strategy}"
+      Show.create! name: 'The Unit', producer: 'David Mamet', piloted_at: DateTime.now
     end
 
-    it 'is triggered upon update' do
+    it 'is triggered upon save in strategy block' do
       skip
-      expect_any_instance_of(Chewy::Strategy::Mock).to receive(:update)
-      puts "STRATEGY IS #{Chewy.root_strategy}"
-      #stub_const 'Movie', Class.new(ActiveRecord::Base) { update_index 'movies#movie', :self }
-      #stub_const 'MoviesIndex', Class.new(Chewy::Index) { define_type Movie }
-      Chewy.strategy(:mock) do
-        Show.create! name: 'Fringe', producer: 'J.J. Abrams', piloted_at: DateTime.now
+      strategy = Thread.current[:chewy_strategy]
+      Chewy::Strategy.class_eval do
+        def stack
+          @stack
+        end
       end
+      Chewy::Strategy::Urgent.class_eval do
+        def update
+          puts "UPDATING"
+        end
+      end
+      puts "@stack is #{strategy.stack}"
+      Chewy.strategy(:urgent) do
+        Show.create! name: 'The Simpsons', producer: 'Matt Groening', piloted_at: DateTime.now
+      end
+      puts "@stack is #{strategy.stack}"
+      expect_any_instance_of(Chewy::Strategy::Base).to receive(:update)
     end
+
+    it 'is triggered upon update'
   end
 end

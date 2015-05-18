@@ -1,41 +1,51 @@
-module Searchengine
-  class DummiesController < ActionController::Base
-  end
-  class Dummy < ActiveRecord::Base
-    include Searchengine::Concerns::Models::Searchable
+require 'spec_helper'
 
-    def self.columns() @columns ||= []; end
-  
-    def self.column(name, sql_type=nil, default=nil, null=true)
-      columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
-    end
-  
-    column :email, :string
-    column :name, :string
+module Searchengine
+  class CitiesController < ActionController::Base
+  end
+
+  class CountriesController < ActionController::Base
+  end
+
+  class City < ActiveRecord::Base
+    include Searchengine::Concerns::Models::Searchable
+  end
+
+  class Country < ActiveRecord::Base
+    include Searchengine::Concerns::Models::Searchable
   end
 
   Engine.routes.draw do
-    get '/search', to: 'dummies#query'
+    get '/search', to: 'cities#query'
+
+    resources :countries do
+      collection do
+        searchable
+      end
+    end
   end
 end
 
-describe Searchengine::DummiesController, type: :controller do
+describe Searchengine::CitiesController, type: :controller do
   before(:each) do
-    Searchengine::DummiesController.class_eval do
+    Searchengine::CitiesController.class_eval do
       include Searchengine::Concerns::Controllers::Searchable
     end
+    allow(Searchengine::City).to receive(:set) { |name, val|
+      stub_const "Searchengine::Indices::#{name}", val
+    }
   end
 
   routes { Searchengine::Engine.routes }
 
   describe 'supporting search' do
     before(:each) do
-      Searchengine::Dummy.searchable_as('Dummy') do |index|
-        index.define_type Searchengine::Dummy do |type|
+      Searchengine::City.searchable_as('Dummy') do |index|
+        index.define_type Searchengine::City do |type|
           type.field :email, :string
         end
       end
-      Searchengine::DummiesController.searches(Searchengine::Dummy)
+      Searchengine::CitiesController.searches(Searchengine::City)
     end
 
     it 'responds to the #search action' do
@@ -44,8 +54,7 @@ describe Searchengine::DummiesController, type: :controller do
     end
     
     it 'calls the #process_query with the appropriate query content' do
-      skip
-      expect(controller.class).to receive(:process_query).with('lisa')
+      expect(controller.class).to receive(:process_query).with(hash_including(q: 'lisa'))
       get :query, q: 'lisa'
     end
   end
