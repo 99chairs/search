@@ -92,11 +92,11 @@ At this very moment updating of the index only works by explicitly calling the
 ```ruby
 Show.search_index.create!
 ```
-would set up the search index in elasticsearch. Figuring out a way to have this
-done as resources mutate is a work in progress, in the meantime one may 
-consider running daily jobs to update all indexes through the 
+would set up and populate the search index in elasticsearch. Figuring out a way
+to have this done as resources mutate is a work in progress, in the meantime 
+one may consider running daily jobs to update all indexes through the 
 ```model.search_index.create!``` calls. The ```updatable_as``` model helper
-does call Chewy's ```#update_index``` method, but there may be something at 
+does call the Chewy ```#update_index``` method, but there may be something at 
 fault in the used strategies that results to no action being taken to persist
 the changes in elasticsearch.
 
@@ -127,9 +127,9 @@ SearchBox Elasticsearch instance.
 
 ## Todo
 
- [ ] clean up tests, just running ```rspec``` does not work well and ideally one wants to run all tests without having to be too specific about which tests to run
- [ ] fix the ```#updatable_as``` model helper, somehow index updating only works after explicitly calling ```#create``` on the search index which is available through ```MODEL.search_index```.
- [ ] make the implementation for the route helpers ```searchable``` and ```searchability_for``` more consistent. Both methods result to url helpers that are not consistently pre/post-fixed.
- [ ] add error handling in controller action. Apparently calling ```/query``` without a ```q``` params breaks the api.
- [ ] test with locally hosted elasticsearch store
- [ ] determine method to test through the eventual consistency issue or mock elasticsearch. Currenly parts of the tests performs calls until a change is observed, but that is far from elegant or efficient.
+ - clean up tests, just running ```rspec``` does not work well and ideally one wants to run all tests without having to be too specific about which tests to run
+ - fix the ```#updatable_as``` model helper, somehow index updating only works after explicitly calling ```#create``` on the search index which is available through ```MODEL.search_index```.
+ - make the implementation for the route helpers ```searchable``` and ```searchability_for``` more consistent. Both methods result to url helpers that are not consistently pre/post-fixed.
+ - add error handling in controller action. Apparently calling ```/query``` without a ```q``` params breaks the api.
+ - test with locally hosted elasticsearch store
+ - determine method to test through the eventual consistency issue or mock elasticsearch. Currenly parts of the tests performs calls until a change is observed, but that is far from elegant or efficient.
