@@ -1,5 +1,0 @@
-= Searchengine
-This project rocks and uses MIT-LICENSE.
-
-== Testing
- - populate spec/dummy/config/chewy.yml
