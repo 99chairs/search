@@ -6,12 +6,15 @@ RSpec.describe ShowsController, type: :controller do
 
     puts Show.search_index
     Show.search_index.create!
+    puts "before #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
     Show.create name: 'Fringe', producer: 'J.J. Abrams', piloted_at: DateTime.now
     Show.create name: 'The Wire', producer: 'David Simon', piloted_at: DateTime.now
     Show.create name: 'Game of Thrones', producer: 'Beinoff & Weiss', piloted_at: DateTime.now
     Show.create name: 'Sherlock', producer: 'Moffat & Gatiss', piloted_at: DateTime.now
     Show.create name: 'House of Cards', producer: 'Beau Willimon', piloted_at: DateTime.now
     Show.create name: 'Little House on the Prairie', producer: 'Michael Landon', piloted_at: DateTime.now
+    Show.search_type.import! refresh: :true
+    #puts "after #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
   end
 
   after(:all) do
@@ -27,11 +30,7 @@ RSpec.describe ShowsController, type: :controller do
   end
 
   describe "GET /query" do
-    before { 
-      Show.search_type.import! refresh: :true
-      20.times { Show.search_type.query(query_string: { query: 'hous*' }).total_count }
-      get :query, { q: 'hous*' } 
-    }
+    before { get :query, { q: 'hous*' } }
 
     it 'contains the matching items' do
       puts request.url
