@@ -4,9 +4,10 @@ RSpec.describe ShowsController, type: :controller do
   before(:all) do
     Chewy.massacre
 
-    puts Show.search_index
     Show.search_index.create!
+
     puts "before #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
+
     Show.create name: 'Fringe', producer: 'J.J. Abrams', piloted_at: DateTime.now
     Show.create name: 'The Wire', producer: 'David Simon', piloted_at: DateTime.now
     Show.create name: 'Game of Thrones', producer: 'Beinoff & Weiss', piloted_at: DateTime.now
@@ -14,7 +15,13 @@ RSpec.describe ShowsController, type: :controller do
     Show.create name: 'House of Cards', producer: 'Beau Willimon', piloted_at: DateTime.now
     Show.create name: 'Little House on the Prairie', producer: 'Michael Landon', piloted_at: DateTime.now
     Show.search_type.import! refresh: :true
-    #puts "after #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
+    for i in 0..10
+      if Show.search_type.query(query_string: { query: 'hous*' }).total_count == 2
+        puts "data integrity achieved after attempt #{i}"
+        break
+      end
+    end
+    puts "after #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
   end
 
   after(:all) do
