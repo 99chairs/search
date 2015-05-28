@@ -35,7 +35,7 @@ module Searchengine
             elasticsearch_query = {
               query_string: { 
                 query: phrase,
-                #analyze_wildcard: true
+                analyze_wildcard: true
               }
             }
             @search_type.query(elasticsearch_query)
