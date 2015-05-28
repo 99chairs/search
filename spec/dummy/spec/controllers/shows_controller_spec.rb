@@ -2,9 +2,10 @@ require 'rails_helper'
 
 RSpec.describe ShowsController, type: :controller do
   before(:all) do
-    Chewy.massacre
+    puts Chewy.configuration
+    puts Chewy.massacre
 
-    Show.search_index.create!
+    puts Show.search_index.create!
 
     puts "before #{Show.search_type.query(query_string: { query: 'hous*' }).total_count}"
 

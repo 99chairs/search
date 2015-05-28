@@ -32,7 +32,13 @@ module Searchengine
           end
 
           def find(phrase, options={})
-            @search_type.query(query_string: { query: phrase })
+            elasticsearch_query = {
+              query_string: { 
+                query: phrase,
+                #analyze_wildcard: true
+              }
+            }
+            @search_type.query(elasticsearch_query)
           end
 
           def searches(searchable, options={})
