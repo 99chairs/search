@@ -6,11 +6,8 @@ module Searchengine
 
         included do
           def query
-            warn "@search_index not available" unless @search_index
             render :json => self.class.process_query(params)
           end
-
-          private
         end
 
         module ClassMethods
@@ -22,7 +19,7 @@ module Searchengine
             # Inspiration was the Google search API. They basically accept a
             # q param which contains the search term. In the spirit of K.I.S.S
             # this same design will be implemented here.
-            results = find(params[:q])
+            results = find(params[:q], params)
             res[:responseData] = {
               timeElapsed: results.took,
               count: results.total_count,
@@ -32,13 +29,7 @@ module Searchengine
           end
 
           def find(phrase, options={})
-            elasticsearch_query = {
-              query_string: { 
-                query: phrase,
-                analyze_wildcard: true
-              }
-            }
-            @search_type.query(elasticsearch_query)
+            construct_query(phrase, options)
           end
 
           def searches(searchable, options={})
@@ -49,6 +40,19 @@ module Searchengine
             end
             @search_index = klass.search_index
             @search_type = klass.search_type
+          end
+
+          def construct_query(phrase, options={})
+            options = ActiveSupport::HashWithIndifferentAccess.new(options)
+            query_details = { 
+              query: phrase,
+              analyze_wildcard: true
+            }
+
+            query_details[:size] = (options[:size] if options.key? :size) || 10
+            query_details[:from] = (options[:from] if options.key? :from) || 0
+
+            @search_type.query(query_string: query_details)
           end
         end
       end

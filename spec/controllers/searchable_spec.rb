@@ -58,4 +58,64 @@ describe Searchengine::CitiesController, type: :controller do
       get :query, q: 'lisa'
     end
   end
+
+  context 'pagination' do
+    let(:details) { }
+    before {
+      skip
+      Searchengine::City.searchable_as('Dummy') do |index|
+        index.define_type Searchengine::City do |type|
+          type.field :email, :string
+        end
+      end
+      Searchengine::CitiesController.searches(Searchengine::City)
+    }
+    subject { controller.class }
+
+    it 'set the starting marker' do
+      expect(subject.find('New', from: 2)).to be_nil
+    end
+
+    it 'sets the count of items to return' do
+      expect(subject.find('New', size: 2)).to be_nil
+    end
+
+    it 'returns the standard count of items' do
+      expect(subject.find('New')).to be_nil
+    end
+  end
+
+  context 'query constructor' do
+    before { skip }
+
+    let(:details) {
+      { 
+        filter: { range: { age: { gte: 100 } } },
+        order: { email: :desc },
+        offset: 12,
+        limit: 10
+      }
+    }
+    subject { controller.class }
+
+    it 'sets the ordering' do
+      is_expected.to receive(:query_ordered).with(anything, details[:order])
+      expect(subject.find('New', details)).to_not be_nil
+    end
+
+    it 'sets the filtering' do
+      is_expected.to receive(:query_filtered).with(anything, details[:filter])
+      expect(subject.find('New', details)).to_not be_nil
+    end
+
+    it 'sets the offset' do
+      is_expected.to receive(:query_offsetted).with(anything, details[:offset])
+      expect(subject.find('New', details)).to_not be_nil
+    end
+
+    it 'sets the limit' do
+      is_expected.to receive(:query_limited).with(anything, details[:limit])
+      expect(subject.find('New', details)).to_not be_nil
+    end
+  end
 end
