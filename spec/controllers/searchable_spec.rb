@@ -62,7 +62,6 @@ describe Searchengine::CitiesController, type: :controller do
   context 'pagination' do
     let(:details) { }
     before {
-      skip
       Searchengine::City.searchable_as('Dummy') do |index|
         index.define_type Searchengine::City do |type|
           type.field :email, :string
@@ -73,11 +72,11 @@ describe Searchengine::CitiesController, type: :controller do
     subject { controller.class }
 
     it 'set the starting marker' do
-      expect(subject.find('New', from: 2)).to be_nil
+      expect(subject.find('New', start: 7)).to be_nil
     end
 
     it 'sets the count of items to return' do
-      expect(subject.find('New', size: 2)).to be_nil
+      expect(subject.find('New', size: 3)).to be_nil
     end
 
     it 'returns the standard count of items' do

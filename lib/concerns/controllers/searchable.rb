@@ -45,14 +45,20 @@ module Searchengine
           def construct_query(phrase, options={})
             options = ActiveSupport::HashWithIndifferentAccess.new(options)
             query_details = { 
-              query: phrase,
-              analyze_wildcard: true
+              query_string: {
+                query: phrase,
+                analyze_wildcard: true
+              }
             }
 
-            query_details[:size] = (options[:size] if options.key? :size) || 10
-            query_details[:from] = (options[:from] if options.key? :from) || 0
-
-            @search_type.query(query_string: query_details)
+            query = @search_type.query(query_details)
+            if options.key?(:start)
+              query = query.offset(options[:start]) 
+            end
+            if options.key?(:size)
+              query = query.limit(options[:size]) 
+            end
+            query
           end
         end
       end
