@@ -37,21 +37,28 @@ model and subsequently the searchable fields of the model are specified.
 
 ### Controller
 The `searches` controller helper sets up a `#query` action that allows requests
-in the form ```/api/controller/query&q=blah+blah+blah``` and will return
+in the form ```CONTROLLER/query&q=blah+blah+blah``` and will return
 its output in the form
 
 ```json
 {
   "responseData": {
     "timeElapsed": t,
+    "totalCount": N,
     "count": N,
     "results": [ ... ]
   }
 }
 ```
-where ```timeElapsed: t``` represents the time elapsed by elasticsearch to 
-process the query and ```count: N``` represents the amount of hits found for 
-the executed query.
+
+where `timeElapsed: t` represents the time elapsed by elasticsearch to 
+process the query, `totalCount: N` reflects the total hits found through the 
+entire index and `count: N` reflects the amount of hits returned within
+this very call.
+
+The results are contained within the array located under the key `results` and
+where every entry is accompanied by a ```_score``` and ```_explanation``` 
+field.
 
 The following snippet describes how one may equip the controller to search
 through the index and type specified for the `Show` model previously.
@@ -67,6 +74,23 @@ class ShowsController < ApplicationController
   end
 end
 ```
+
+#### Limiting
+One may limit the results of a search query through the `size` parameter as
+demonstrated in the following example: 
+`http://test.host/shows/query?q=hous%2A&size=1`.
+
+The default limit is always `10`.
+
+#### Offsetting
+One may specify the offset for results of a search query through the `size` 
+parameter as demonstrated in the following example: 
+`http://test.host/shows/query?q=hous%2A&start=0`.
+
+The default offset is always `0`.
+
+More about limits and offsets is to be found on [the ES documentation site](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-from-size.html).
+
 
 ### Routes
 In order to expose the action to the end-user a route needs to be setup.
