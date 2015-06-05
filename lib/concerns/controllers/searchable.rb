@@ -22,7 +22,7 @@ module Searchengine
             results = find(params[:q], params)
             res[:responseData] = {
               timeElapsed: results.took,
-              total_hits: results.total_count,
+              totalCount: results.total_count,
               count: results.count,
               results: results.map { |r| r.attributes }
             }
@@ -53,8 +53,8 @@ module Searchengine
             }
 
             size  = (options[:size]  if options.key?(:size))  || 10
-            start = (options[:start] if options.key?(:start)) ||  0
-            @search_type.query(query_details).limit(size).offset(start)
+            from = (options[:from] if options.key?(:from)) ||  0
+            @search_type.query(query_details).limit(size).offset(from)
           end
         end
       end

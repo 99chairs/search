@@ -42,7 +42,7 @@ RSpec.describe ShowsController, type: :controller do
 
     it 'returns the amount of total hits' do
       puts request.url
-      expect(json_response[:responseData][:total_hits]).to eq(2)
+      expect(json_response[:responseData][:totalCount]).to eq(2)
     end
 
     it 'returns the requested amount of hits' do
@@ -57,7 +57,22 @@ RSpec.describe ShowsController, type: :controller do
 
     it 'returns the amount of total hits' do
       puts request.url
-      expect(json_response[:responseData][:total_hits]).to eq(2)
+      expect(json_response[:responseData][:totalCount]).to eq(2)
+    end
+
+    it 'contains the matching items' do
+      puts request.url
+      expect(json_response[:responseData][:count]).to eq(1)
+      expect(json_response[:responseData][:results].count).to eq(1)
+    end
+  end
+
+  describe "GET /query with offset" do
+    before { get :query, { q: 'hous*', from: 1 } }
+
+    it 'returns the amount of total hits' do
+      puts request.url
+      expect(json_response[:responseData][:totalCount]).to eq(2)
     end
 
     it 'contains the matching items' do
