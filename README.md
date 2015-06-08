@@ -111,18 +111,35 @@ This Rails engine uses the [Chewy gem](https://github.com/toptal/chewy) as a
 high-level interface to elasticsearch. Setup a `config/chewy.yml` file for the
 application in order to dictate to the application where to find elasticsearch.
 
-At this very moment updating of the index only works by explicitly calling the 
-```create``` method on the respective index objects. This means that the call
+In order to use search there needs to be a search index with the appropriate 
+content. One may create an index on the `Show` model by executing:
+
 ```ruby
 Show.search_index.create!
 ```
-would set up and populate the search index in elasticsearch. Figuring out a way
-to have this done as resources mutate is a work in progress, in the meantime 
-one may consider running daily jobs to update all indexes through the 
-```model.search_index.create!``` calls. The ```updatable_as``` model helper
-does call the Chewy ```#update_index``` method, but there may be something at 
-fault in the used strategies that results to no action being taken to persist
-the changes in elasticsearch.
+
+Alternatively one can run `#import ` to create and populate the index. The call
+
+```ruby
+Show.search_index.import refresh: true
+```
+
+will set up and populate the search index in elasticsearch. Whenever setting up
+the gem on a system that has no indices yet, it is recommended to run the 
+`#import` method once because simply creating an index without also populating the
+index will not make querrying simpler.
+
+One could consider creating a migration for this task. The ```updatable_as``` 
+model helper calls the Chewy ```#update_index``` method, in accordance to the 
+selected strategy, whenever a resource is mutated.
+
+NOTE: Elasticsearch is an eventually consistent store which means that any 
+operation executed will lead to a consistent state somewhere in the future but
+makes no guarantees of how far in the future consistency will be achieved.
+Whenever adding resources, it may take some time before the changes are 
+reflected in the results. As of yet, I am not aware of any way to setup 
+callbacks which basically means that there is some waiting involved when working
+with Elasticsearch. That's just the way it is! (Tupac rest in peace).
 
 ## Testing
 Run the model or controller specs through the following commands:
@@ -152,7 +169,6 @@ SearchBox Elasticsearch instance.
 ## Todo
 
  - clean up tests, just running ```rspec``` does not work well and ideally one wants to run all tests without having to be too specific about which tests to run
- - fix the ```#updatable_as``` model helper, somehow index updating only works after explicitly calling ```#create``` on the search index which is available through ```MODEL.search_index```.
  - make the implementation for the route helpers ```searchable``` and ```searchability_for``` more consistent. Both methods result to url helpers that are not consistently pre/post-fixed.
  - add error handling in controller action. Apparently calling ```/query``` without a ```q``` params breaks the api.
  - test with locally hosted elasticsearch store
