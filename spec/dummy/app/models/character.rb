@@ -13,6 +13,11 @@ class Character < ActiveRecord::Base
       type.field :name, type: 'string'
       type.field :email, type: 'string' #analyzer: :user_email
       type.field :description, type: 'string'
+      type.field :category, type: 'string'
+      type.field :category_name, 
+        value: ->(c) { c.category }, 
+        type: 'string', 
+        index: 'not_analyzed'
     end
   end
 

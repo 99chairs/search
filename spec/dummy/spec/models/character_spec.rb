@@ -3,12 +3,18 @@ require 'rails_helper'
 RSpec.describe Character, type: :model do
   before(:all) do
     Character.destroy_all
+    Chewy.massacre
     populate_dummy_dataset
     wait_until_index_is_populated
   end
 
   after(:all) do
     Character.destroy_all
+  end
+
+  it 'does something', type: 'aggs' do
+    p aggregations
+    fail
   end
 
   it 'finds Caligula by his full e-mail address', type: 'search' do
@@ -31,6 +37,28 @@ RSpec.describe Character, type: :model do
     find_by_searchphrase(phrase).map(&:attributes)
   end
 
+  def aggregations
+    Character.search_type.aggregations(
+      categories: {
+        terms:  {
+          field: 'category_name',
+          execution_hint: 'global_ordinals_low_cardinality',
+        }
+      },
+#      categories: {
+#        filters: { 
+#          { term: { body: 'something' } },
+#        }
+#        aggs: {
+#          
+#        }
+#      }
+      unique_categories_count: { cardinality: { field: 'category' } },
+      categories_count: { value_count: { field: 'category' } },
+      description: { terms: { field: 'description' } },
+    ).aggregations
+  end
+
   def find_by_searchphrase(phrase)
     q = { query_string: { query: "#{phrase}", analyze_wildcard: true } }
     Character.search_type.query(q)
@@ -44,6 +72,7 @@ RSpec.describe Character, type: :model do
       { name: 'Peter Griffin', description: 'the fat guy', category: 'Family Guy' },
       { name: 'Stewie Griffin', description: 'evil baby', category: 'Family Guy' },
       { name: 'Brian Griffin', description: 'talking dog', category: 'Family Guy' },
+      { name: 'Mort', description: 'the jew', category: 'Family Guy' },
       { name: 'Adam West', category: 'Family Guy' },
       { name: 'Megatron Griffin', category: 'Family Guy' },
       { name: 'Montogomery Burns', description: 'evil old fart', category: 'The Simpsons' },
@@ -53,7 +82,6 @@ RSpec.describe Character, type: :model do
       { name: 'Eric Cartman', description: 'the fat guy', category: 'South Park' },
       { name: 'Chef', description: 'the black guy', category: 'South Park' },
       { name: 'Token', description: 'the young black guy', category: 'South Park' },
-      { name: 'Kenny', description: 'the jew', category: 'South Park' },
       { name: 'Kyle', description: 'the jew', category: 'South Park' },
       { name: 'Kenny', description: 'the poor kid', category: 'South Park' },
       { name: 'Timmy', description: 'the disabled kid', category: 'South Park' },
@@ -66,7 +94,7 @@ RSpec.describe Character, type: :model do
     Character.search_type.import!
     count = 10
     while Character.search_type.total_count != Character.count
-      fail "unable to resolve" if count <= 0
+      fail "index only contains #{Character.search_type.total_count} items where there should have been #{Character.count}" if count <= 0
       count -= 1
     end
   end
