@@ -36,6 +36,32 @@ describe 'Searchability' do
       }.by(1)
     end
 
+    it 'sets the search_index for the model' do
+      expect{ City.searchable_as('OldSyntax') {} }.to change { 
+        City.search_index 
+      }.from(nil)
+    end
+
+    it 'sets the search_type for the model through the old syntax' do
+      expect {
+        City.searchable_as('OldSyntaxCheckIndex') do |index|
+          index.define_type 'OldType' do |type|
+            type.field :name, :string
+          end
+        end
+      }.to change{ City.search_type.to_s }.from('').to(match /OldType/)
+    end
+
+    it 'sets the search_type for the model through the new syntax' do
+      expect {
+        City.searchable_as('NewSyntaxCheckIndex') do
+          define_type 'NewType' do
+            field :name, :string
+          end
+        end
+      }.to change{ City.search_type.to_s }.from('').to(match /NewType/)
+    end
+
     it 'creates the fields through the old syntax' do
       City.searchable_as('OldSyntax') do |index| 
         index.define_type 'Something' do |type|
