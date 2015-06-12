@@ -1,12 +1,12 @@
 class Character < ActiveRecord::Base
   include Searchengine::Concerns::Models::Searchable
-  searchable_as('test') do |index|
-    index.define_type Character do |type|
-      type.field :name, type: 'string'
-      type.field :email, type: 'string'
-      type.field :description, type: 'string'
-      type.field :category, type: 'string'
-      type.field :category_name, 
+  searchable_as('test') do
+    define_type Character do
+      field :name, type: 'string'
+      field :email, type: 'string'
+      field :description, type: 'string'
+      field :category, type: 'string'
+      field :category_name, 
         value: ->(c) { c.category }, 
         type: 'string', 
         index: 'not_analyzed'

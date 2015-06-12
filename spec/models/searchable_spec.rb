@@ -36,6 +36,24 @@ describe 'Searchability' do
       }.by(1)
     end
 
+    it 'creates the fields through the old syntax' do
+      City.searchable_as('OldSyntax') do |index| 
+        index.define_type 'Something' do |type|
+          type.field :name, :string
+        end
+      end
+      expect(Searchengine::Indices::OldSyntaxIndex::Something.mappings_hash[:something][:properties]).to match(a_hash_including(name: a_hash_including(type: 'string')))
+    end
+
+    it 'creates the fields through the new syntax' do
+      City.searchable_as('NewSyntax') do
+        define_type 'Something' do
+          field :name, :string
+        end
+      end
+      expect(Searchengine::Indices::NewSyntaxIndex::Something.mappings_hash[:something][:properties]).to match(a_hash_including(name: a_hash_including(type: 'string')))
+    end
+
     it 'creates a search index for named searchable models' do
       expect {
         City.searchable_as('Unoccupied') do |index| 

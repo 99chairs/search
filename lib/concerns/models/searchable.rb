@@ -19,14 +19,11 @@ module Searchengine
           ##
           # Creates a search index for the specified model given +name+ and 
           # optional (it's in the name) +options+
-          def searchable_as(name, options={})
+          def searchable_as(name, options={}, &block)
             @search_index_name = "#{name.to_s.camelize}Index"
             @search_index = set @search_index_name, Class.new(Chewy::Index)
 
-            @search_index.class_eval do
-              yield self 
-            end
-
+            @search_index.class_eval(&block)
             if @search_index.types.length == 1
               @search_type = @search_index.types.first
             else
