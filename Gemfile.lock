@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    searchengine (0.0.4)
+    searchengine (0.0.6)
       chewy
       rails (>= 4.0.2)
 

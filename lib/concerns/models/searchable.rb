@@ -21,7 +21,7 @@ module Searchengine
           # optional (it's in the name) +options+
           def searchable_as(name, options={}, &block)
             @search_index_name = "#{name.to_s.camelize}Index"
-            @search_index = set @search_index_name, Class.new(Chewy::Index)
+            set_search_index
 
             @search_index.class_eval(&block)
             if @search_index.types.length == 1
@@ -55,8 +55,20 @@ module Searchengine
           end
 
           private
-          def set(name, value)
+          def set_search_type(name, value)
             Searchengine::Indices.const_set(name, value)
+          end
+
+          def set_search_index
+            @search_index = (search_indices.const_get(@search_index_name) rescue nil)
+            unless @search_index
+              klass = Class.new(Chewy::Index)
+              @search_index = set_search_type @search_index_name, klass
+            end
+          end
+
+          def search_indices
+            Searchengine::Indices
           end
         end
       end
