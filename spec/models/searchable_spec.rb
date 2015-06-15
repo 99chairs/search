@@ -2,11 +2,14 @@ require 'spec_helper'
 
 describe 'Searchability' do
   before(:each) do
-    stub_class 'City', ActiveRecord::Base
-    stub_class 'Village', ActiveRecord::Base
     Chewy.root_strategy = :urgent
-    class_double(City).as_stubbed_const
-    class_double(Village).as_stubbed_const
+    %w(City Village).each do |klass_name|
+      stub_class klass_name, ActiveRecord::Base
+      class_double(eval(klass_name)).as_stubbed_const
+      allow(eval(klass_name)).to receive(:search_type_name) { 
+        klass_name 
+      }
+    end
   end
 
   context 'on a dummy model' do
@@ -16,7 +19,7 @@ describe 'Searchability' do
         include Searchengine::Concerns::Models::Searchable
         extend Chewy::Type::Observe::ActiveRecordMethods
       end
-      allow(klass).to receive(:set_search_type) { |name, val|
+      allow(klass).to receive(:init_search_index) { |name, val|
         stub_const "Searchengine::Indices::#{name}", val
       } }
     end
@@ -92,6 +95,24 @@ describe 'Searchability' do
           end
         end
       }.to change{ Searchengine::Indices.all.map{ |t| Searchengine::Indices.const_get(t).types }.flatten.count }.from(0).to(2)
+    end
+
+    it 'sets #search_type for multiple Models' do
+      expect {
+        City.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'City' do
+            field :name, :string
+          end
+        end
+        Village.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'Village' do
+            field :name, :string
+            field :country, :string
+          end
+        end
+      }.to change{ [Village.search_type.to_s, City.search_type.to_s] }
+        .from(['', ''])
+        .to([match(/Village/), match(/City/)])
     end
 
     it 'creates the fields through the old syntax' do

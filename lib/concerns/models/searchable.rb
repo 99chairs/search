@@ -24,11 +24,11 @@ module Searchengine
             set_search_index
 
             @search_index.class_eval(&block)
-            if @search_index.types.length == 1
-              @search_type = @search_index.types.first
-            else
-              @search_type = nil
-            end
+            # NOTE: Somewhat nasty implementation but as the block has most 
+            # likely described a new type to be available, we use that type.
+            # This seemed better than forcing the user to name the type like
+            # the model.
+            @search_type = @search_index.types.last
             @search_index
           end
 
@@ -55,20 +55,24 @@ module Searchengine
           end
 
           private
-          def set_search_type(name, value)
-            Searchengine::Indices.const_set(name, value)
-          end
-
           def set_search_index
             @search_index = (search_indices.const_get(@search_index_name) rescue nil)
             unless @search_index
               klass = Class.new(Chewy::Index)
-              @search_index = set_search_type @search_index_name, klass
+              @search_index = init_search_index @search_index_name, klass
             end
+          end
+
+          def init_search_index(name, value)
+            Searchengine::Indices.const_set(name, value)
           end
 
           def search_indices
             Searchengine::Indices
+          end
+
+          def search_type_name
+            self.class.to_s
           end
         end
       end
