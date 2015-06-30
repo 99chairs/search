@@ -5,7 +5,7 @@ module Searchengine
     module Models
       module Searchable
         extend ActiveSupport::Concern
-  
+
         included do
         end
 
@@ -17,14 +17,14 @@ module Searchengine
           end
 
           ##
-          # Creates a search index for the specified model given +name+ and 
+          # Creates a search index for the specified model given +name+ and
           # optional (it's in the name) +options+
           def searchable_as(name, options={})
             @search_index_name = "#{name.to_s.camelize}Index"
             @search_index = set @search_index_name, Class.new(Chewy::Index)
 
             @search_index.class_eval do
-              yield self 
+              yield self
             end
 
             if @search_index.types.length == 1
@@ -37,9 +37,9 @@ module Searchengine
 
           def updatable_as(index, type=nil)
             if index.is_a? Chewy::Type
-              args = [@search_type, urgent: true]
+              args = [@search_type]
             else
-              args = ["/searchengine/indices/#{index}##{type}", urgent: true]
+              args = ["/searchengine/indices/#{index}##{type}"]
             end
 
             update_index(*args) { self } # may raise hell
