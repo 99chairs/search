@@ -8,6 +8,10 @@ module Searchengine
           def query
             render :json => self.class.process_query(params)
           end
+
+          def facets
+            render :json => {}
+          end
         end
 
         module ClassMethods

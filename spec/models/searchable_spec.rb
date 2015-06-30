@@ -2,21 +2,26 @@ require 'spec_helper'
 
 describe 'Searchability' do
   before(:each) do
-    stub_class 'City', ActiveRecord::Base
     Chewy.root_strategy = :urgent
-    class_double(City).as_stubbed_const
+    %w(City Village).each do |klass_name|
+      stub_class klass_name, ActiveRecord::Base
+      class_double(eval(klass_name)).as_stubbed_const
+      allow(eval(klass_name)).to receive(:search_type_name) { 
+        klass_name 
+      }
+    end
   end
 
   context 'on a dummy model' do
     before(:each) do
-      City.class_eval do
+      [City, Village].map { |klass| klass.class_eval do
         # TODO: make this obsolete by extending ActiveRecord in an ActiveSupport#on_load block
         include Searchengine::Concerns::Models::Searchable
         extend Chewy::Type::Observe::ActiveRecordMethods
       end
-      allow(City).to receive(:set) { |name, val|
+      allow(klass).to receive(:init_search_index) { |name, val|
         stub_const "Searchengine::Indices::#{name}", val
-      }
+      } }
     end
 
     it 'exposes the searchability descriptors' do
@@ -34,6 +39,98 @@ describe 'Searchability' do
       }.to change{
         Searchengine::Indices.all.count
       }.by(1)
+    end
+
+    it 'sets the search_index for the model' do
+      expect{ City.searchable_as('OldSyntax') {} }.to change { 
+        City.search_index 
+      }.from(nil)
+    end
+
+    it 'sets the search_type for the model through the old syntax' do
+      expect {
+        City.searchable_as('OldSyntaxCheck') do |index|
+          index.define_type 'OldType' do |type|
+            type.field :name, :string
+          end
+        end
+      }.to change{ City.search_type.to_s }.from('').to(match /OldType/)
+    end
+
+    it 'sets the search_type for the model through the new syntax' do
+      expect {
+        City.searchable_as('NewSyntaxCheck') do
+          define_type 'NewType' do
+            field :name, :string
+          end
+        end
+      }.to change{ City.search_type.to_s }.from('').to(match /NewType/)
+    end
+
+    it 'allows the definition of multiple search_types for a single model' do
+      expect {
+        City.searchable_as('MultipleTypesCheck') do
+          define_type 'FirstType' do
+            field :name, :string
+          end
+          define_type 'SecondType' do
+            field :name, :string
+            field :country, :string
+          end
+        end
+      }.to change{ Searchengine::Indices.all.map{ |t| Searchengine::Indices.const_get(t).types }.flatten.count }.from(0).to(2)
+    end
+
+    it 'allows the definition of multiple search_types for a different model' do
+      expect {
+        City.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'City' do
+            field :name, :string
+          end
+        end
+        Village.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'Village' do
+            field :name, :string
+            field :country, :string
+          end
+        end
+      }.to change{ Searchengine::Indices.all.map{ |t| Searchengine::Indices.const_get(t).types }.flatten.count }.from(0).to(2)
+    end
+
+    it 'sets #search_type for multiple Models' do
+      expect {
+        City.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'City' do
+            field :name, :string
+          end
+        end
+        Village.searchable_as('SpreadedMultipleTypesCheck') do
+          define_type 'Village' do
+            field :name, :string
+            field :country, :string
+          end
+        end
+      }.to change{ [Village.search_type.to_s, City.search_type.to_s] }
+        .from(['', ''])
+        .to([match(/Village/), match(/City/)])
+    end
+
+    it 'creates the fields through the old syntax' do
+      City.searchable_as('OldSyntax') do |index| 
+        index.define_type 'Something' do |type|
+          type.field :name, :string
+        end
+      end
+      expect(Searchengine::Indices::OldSyntaxIndex::Something.mappings_hash[:something][:properties]).to match(a_hash_including(name: a_hash_including(type: 'string')))
+    end
+
+    it 'creates the fields through the new syntax' do
+      City.searchable_as('NewSyntax') do
+        define_type 'Something' do
+          field :name, :string
+        end
+      end
+      expect(Searchengine::Indices::NewSyntaxIndex::Something.mappings_hash[:something][:properties]).to match(a_hash_including(name: a_hash_including(type: 'string')))
     end
 
     it 'creates a search index for named searchable models' do
