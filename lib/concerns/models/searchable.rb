@@ -5,7 +5,7 @@ module Searchengine
     module Models
       module Searchable
         extend ActiveSupport::Concern
-  
+
         included do
         end
 
@@ -17,29 +17,26 @@ module Searchengine
           end
 
           ##
-          # Creates a search index for the specified model given +name+ and 
+          # Creates a search index for the specified model given +name+ and
           # optional (it's in the name) +options+
-          def searchable_as(name, options={})
+          def searchable_as(name, options={}, &block)
             @search_index_name = "#{name.to_s.camelize}Index"
-            @search_index = set @search_index_name, Class.new(Chewy::Index)
+            set_search_index
 
-            @search_index.class_eval do
-              yield self 
-            end
-
-            if @search_index.types.length == 1
-              @search_type = @search_index.types.first
-            else
-              @search_type = nil
-            end
+            @search_index.class_eval(&block)
+            # NOTE: Somewhat nasty implementation but as the block has most
+            # likely described a new type to be available, we use that type.
+            # This seemed better than forcing the user to name the type like
+            # the model.
+            @search_type = @search_index.types.last
             @search_index
           end
 
           def updatable_as(index, type=nil)
             if index.is_a? Chewy::Type
-              args = [@search_type, urgent: true]
+              args = [@search_type]
             else
-              args = ["/searchengine/indices/#{index}##{type}", urgent: true]
+              args = ["/searchengine/indices/#{index}##{type}"]
             end
 
             update_index(*args) { self } # may raise hell
@@ -58,8 +55,24 @@ module Searchengine
           end
 
           private
-          def set(name, value)
+          def set_search_index
+            @search_index = (search_indices.const_get(@search_index_name) rescue nil)
+            unless @search_index
+              klass = Class.new(Chewy::Index)
+              @search_index = init_search_index @search_index_name, klass
+            end
+          end
+
+          def init_search_index(name, value)
             Searchengine::Indices.const_set(name, value)
+          end
+
+          def search_indices
+            Searchengine::Indices
+          end
+
+          def search_type_name
+            self.class.to_s
           end
         end
       end
